@@ -1,58 +1,38 @@
-const recordBtn = document.getElementById("recordBtn");
-const stopBtn = document.getElementById("stopBtn");
-const audioPlayback = document.getElementById("audioPlayback");
-const feedback = document.getElementById("feedback");
-const wordList = document.getElementById("wordList");
-
-const words = ["곡괭이", "컴퓨터", "자동차", "바나나", "학교"];
-let currentIndex = 0;
 let mediaRecorder;
 let audioChunks = [];
 
-// 단어 리스트를 화면에 쭉 보여주기
-function renderWordList() {
-  wordList.innerHTML = "";
-  words.forEach((word, idx) => {
-    const div = document.createElement("div");
-    div.classList.add("word-item");
-    if (idx === currentIndex) div.classList.add("current");
-    div.id = `word-${idx}`;
-    div.innerHTML = `
-      <div>단어: ${word}</div>
-      <div class="feedback" id="feedback-${idx}"></div>
-    `;
-    wordList.appendChild(div);
-  });
-}
+const recordBtn = document.getElementById("recordBtn");
+const stopBtn = document.getElementById("stopBtn");
+const nextWordBtn = document.getElementById("nextWordBtn");
+const audioPlayback = document.getElementById("audioPlayback");
+const feedback = document.getElementById("feedback");
+const wordElement = document.getElementById("word");
 
-renderWordList();
+const words = ["곡괭이", "컴퓨터", "자동차", "바나나", "학교"];
+let currentIndex = 0;
 
-function updateCurrentWordHighlight() {
-  words.forEach((_, idx) => {
-    const div = document.getElementById(`word-${idx}`);
-    if (idx === currentIndex) div.classList.add("current");
-    else div.classList.remove("current");
-  });
+function setWord(index) {
+  wordElement.innerText = words[index];
 }
 
 recordBtn.onclick = async () => {
+  console.log("녹음 시작");
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
+
     audioChunks = [];
 
     mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
 
     mediaRecorder.onstop = async () => {
+      console.log("녹음 종료됨");
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
       audioPlayback.src = URL.createObjectURL(audioBlob);
 
-      // 서버에 전송
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
-      formData.append("word", words[currentIndex]);
-
-      const feedbackDiv = document.getElementById(`feedback-${currentIndex}`);
+      formData.append("word", wordElement.innerText);
 
       try {
         const response = await fetch("/api/evaluate", {
@@ -60,30 +40,26 @@ recordBtn.onclick = async () => {
           body: formData,
         });
         const result = await response.json();
-        feedbackDiv.innerText = result.feedback || "평가 완료";
-        feedbackDiv.style.color = "green";
+        feedback.innerText = result.feedback;
       } catch (err) {
         console.error("서버 요청 실패", err);
-        feedbackDiv.innerText = "평가 요청 실패";
-        feedbackDiv.style.color = "red";
-      }
-
-      // 다음 단어로 넘어가기
-      if (currentIndex < words.length - 1) {
-        currentIndex++;
-        updateCurrentWordHighlight();
-      } else {
-        feedback.innerText = "모든 단어 녹음 및 평가 완료!";
-        recordBtn.disabled = true;
-        stopBtn.disabled = true;
+        feedback.innerText = "평가 요청 실패";
+      } finally {
+        if (currentIndex < words.length - 1) {
+          nextWordBtn.disabled = false;
+          console.log("다음 버튼 활성화");
+        }
       }
     };
 
     mediaRecorder.start();
 
+    // 버튼 상태 변경
     recordBtn.disabled = true;
     stopBtn.disabled = false;
-    feedback.innerText = `단어 "${words[currentIndex]}" 녹음 중...`;
+    nextWordBtn.disabled = true;
+    feedback.innerText = "";
+    audioPlayback.src = "";
   } catch (err) {
     console.error("마이크 접근 실패", err);
     feedback.innerText = "마이크 접근 실패";
@@ -91,10 +67,24 @@ recordBtn.onclick = async () => {
 };
 
 stopBtn.onclick = () => {
+  console.log("중지 버튼 클릭됨");
   if (mediaRecorder && mediaRecorder.state === "recording") {
     mediaRecorder.stop();
   }
   recordBtn.disabled = false;
   stopBtn.disabled = true;
-  feedback.innerText = "";
 };
+
+nextWordBtn.onclick = () => {
+  if (currentIndex < words.length - 1) {
+    currentIndex++;
+    setWord(currentIndex);
+    feedback.innerText = "";
+    audioPlayback.src = "";
+    nextWordBtn.disabled = true;
+    console.log(`다음 단어로 이동: ${words[currentIndex]}`);
+  }
+};
+
+// 초기 단어 세팅
+setWord(currentIndex);
