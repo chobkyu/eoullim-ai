@@ -17,7 +17,7 @@ def evaluate_pronunciation_accuracy(expected: str, spoken: str) -> dict:
     jamo_similarity = 1 - jamo_dist / max(len(expected_jamo), len(spoken_jamo))
 
     # 3. Jaro-Winkler 유사도
-    jaro_similarity = jellyfish.jaro_winkler(expected, spoken)
+    jaro_similarity = jellyfish.jaro_winkler_similarity(expected, spoken)
 
     # 4. 평균 점수 계산
     average_score = round((char_similarity + jamo_similarity + jaro_similarity) / 3 * 100, 2)

@@ -35,7 +35,10 @@ async def analyze_audio(audio_bytes: bytes, expected_word: str):
         f"- 종합 평균 유사도 점수: {similarity['average_score']}%\n\n"
         "이 정보를 바탕으로 어린이가 발음을 얼마나 정확히 했는지 평가해 주세요. "
         "발음이 부정확하다면 어떤 부분이 틀렸는지도 함께 설명해 주세요."
+        "유아를 대상으로 한 설명이기 때문에 한,두 문장의 쉬운 설명으로 알려주세요"
     )
+
+    print(prompt)
 
     chat_response = client.chat.completions.create(
         model="gpt-4.1-nano",
