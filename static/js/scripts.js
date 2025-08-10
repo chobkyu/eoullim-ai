@@ -23,7 +23,7 @@ recordBtn.onclick = async () => {
     audioChunks = [];
 
     mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-    console.log("sibal");
+
     mediaRecorder.onstop = async () => {
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
 
